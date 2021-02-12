@@ -3,126 +3,138 @@
 #include "headers/parser.h"
 
 struct config_var_base {
-    char *Var;
-    char *Grp;
-    u_int64_t val;
-    config_var_base(const char *Var, const char *Grp) : Var(Var), Grp(Grp), val(0) {}
-    config_var_base(const config_var_base &V) : Var(V.Var), Grp(V.Grp), val(V.val) {}
-    config_var_base() : Var(nullptr), Grp(nullptr), val(0) {}
+    const char *Var;
+    const char *Grp;
+    u_int64_t data;
+    config_var_base(const char *Var, const char *Grp) : Var(Var), Grp(Grp), data(0) {}
+    config_var_base(const config_var_base &V) : Var(V.Var), Grp(V.Grp), data(V.data) {}
+    config_var_base() : Var(nullptr), Grp(nullptr), data(0) {}
 
     config_var_base& operator = (const config_var_base &O) {
         Var = O.Var;
         Grp = O.Grp;
-        val = O.val;
+        data = O.data;
+        return *this;
     }
-    int operator () (const ConfigParser *Parser);
-    virtual int getvar(const ConfigParser *Parser);
-};
-struct cfg_int : config_var_base {
-    cfg_int(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    int operator * ();
-};
-struct cfg_uint : config_var_base {
-    cfg_uint(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    unsigned int operator * ();
-};
-struct cfg_long : config_var_base {
-    cfg_long(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    long operator * ();
-};
-struct cfg_ulong : config_var_base {
-    cfg_ulong(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    unsigned long operator * ();
-};
-struct cfg_float : config_var_base {
-    cfg_float(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    float operator * ();
-};
-struct cfg_double : config_var_base {
-    cfg_double(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    double operator * ();
-};
-struct cfg_string : config_var_base {
-    cfg_double(const char *Var, const char *Grp);
-    virtual int getvar(const ConfigParser *Parser);
-    const char* operator * ();
+    
+    int operator () (const ConfigParser *Parser) const { return this->getvar(Parser); }
+    virtual int getvar(const ConfigParser *Parser) const = 0;
 };
 
-class __log_config {
-public:
-    __log_config(const char*);
-    ~__log_config();
-    int init(const char*);
-public:
+struct cfint : config_var_base {
+    cfint(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_i((int*)&data, Parser, Var, Grp); }
+    int& operator * () const { return *((int*)&0); }
+};
+struct cfuint : config_var_base {
+    cfuint(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_ui((unsigned int*)&data, Parser, Var, Grp);; }
+    unsigned int& operator * () const { return *((unsigned int*)&data); }
+};
+struct cflong : config_var_base {
+    cflong(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_l((long*)&data, Parser, Var, Grp);; }
+    long& operator * () const { return  *((long*)&data); }
+};
+
+struct cftime_t : cflong {};
+
+struct cfulong : config_var_base {
+    cfulong(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_ul((unsigned long*)&data, Parser, Var, Grp);; }
+    unsigned long operator * () const { return  *((unsigned long*)&data); }
+};
+
+struct cfg_size_t : cfulong {};
+
+struct cffloat : config_var_base {
+    cffloat(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_f((float*)&data, Parser, Var, Grp);; }
+    float operator * () const { return  *((float*)&data); }
+};
+struct cfdouble : config_var_base {
+    cfdouble(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const { return Parser->parse_d((double*)&data, Parser, Var, Grp);; }
+    double operator * () const { return  *((double*)&data); }
+};
+struct cfstring : config_var_base {
+    cfstring(const char *Var, const char *Grp) : config_var_base(Var, Grp) {}
+    virtual int getvar(const ConfigParser *Parser) const {
+        data = Parser->parse_str((const char*)&data, Parser, Var, Grp);
+        return (*((char**)&data) != 0 ? 0 : -1);
+    }
+    const char* operator * () const { return  *((const char**)&data); }
+};
+
+struct __log_config {
+    int init(const char*) { return -1; }
     //
     struct _Mode {
-        mutable cfg_string RunAs;
+        const cfstring RunAs;
     } Mode;
     
     //
     struct _LifeTime {
-        mutable cfg_long DayTime;
-        mutable cfg_long FileTime;
-        mutable cfg_ulong FileSize;
-        mutable cfg_long KickAfter;
+        const cflong DayTime;
+        const cflong FileTime;
+        const cfulong FileSize;
+        const cflong KickAfter;
     } LifeTime;
     //
     struct _BuffSz {
-        mutable cfg_int Date;
-        mutable cfg_int Time;
-        mutable cfg_int ActName;
+        const cfint Date;
+        const cfint Time;
+        const cfint ActualName;
     } BufferSize;
     //
     struct _Format {
-        mutable cfg_string Format_PathDate;
-        mutable cfg_string Format_PathTime;
-        mutable cfg_string Format_MsgTime;
-        mutable cfg_string Format_Message;
-        mutable cfg_string Format_RelPath;
-        mutable cfg_string Format_RelName;
-        mutable cfg_string Format_RelMap;
+        const cfstring PathDate;
+        const cfstring PathTime;
+        const cfstring MsgTime;
+        const cfstring Message;
+        const cfstring RelPath;
+        const cfstring RelName;
+        const cfstring RelMap;
     } Format;
     //
     struct _Pipe {
-        mutable cfg_string Path;
+        const cfstring Path;
     } Pipe;
     //
     struct _Server {
-        mutable cfg_string Server_listAddr;
-        mutable cfg_uint Server_listPort;
+        const cfstring listAddr;
+        const cfuint listPort;
     } Server;
-protected:
-    char *Buff;
 };
-__log_config VrV = {
+
+__log_config LogConfig = {
     .Mode = {
-        config_entry<size_t>("RunType", "Mode")
+        .RunAs = {"RunType", "Mode"}
     },
     .LifeTime = {
+        .DayTime = { "DayTime", "LifeTime" },
+        .FileTime = { "FileTime", "LifeTime"  },
+        .FileSize = { "FileSize", "LifeTime" },
+        .KickAfter = { "KickAfter", "LifeTime" }
+    },
+    . BufferSize = {
+        .Date = { "Date", "BufferSize" },
+        .Time = { "Time", "BufferSize" },
+        .ActualName = { "ActualName", "BufferSize" },
 
+    },
+    .Format = { 
+        .PathDate = { "PathDate", "Format" },
+        .PathTime = { "PathTime", "Format" },
+        .MsgTime = { "MsgTime", "Format" },
+        .Message = { "Message", "Format" },
+        .RelPath = { "RealPath", "Format" },
+        .RelName = { "RelativeName", "Format" },
+        .RelMap = { "RelativeMap", "Format" }
+    },
+    .Pipe = { .Path = { "PipePath", "Pipe" } },
+    .Server = { 
+        .listAddr = { "ListenAddr", "Server" },
+        .listPort = { "ListenPort", "Server" }
     }
-    . LifeTime_DayTimeconfig_entry<time_t>("DayTime", "LifeTime"),
-    config_entry<time_t>("FileTime", "LifeTime"),
-    config_entry<size_t>("FileSize", "LifeTime"),
-    config_entry<time_t>("KickAfter", "LifeTime"),
-    config_entry<size_t>("Date", "BufferSize"),
-    config_entry<size_t>("Time", "BufferSize"),
-    config_entry<size_t>("ActualName", "BufferSize"),
-    config_entry<char *>("PathDate", "Format"),
-    config_entry<char *>("PathTime", "Format"),
-    config_entry<char *>("MsgTime", "Format"),
-    config_entry<char *>("Message", "Format"),
-    config_entry<char *>("RelativePath", "Format"),
-    config_entry<char *>("RelativeName", "Format"),
-    config_entry<char *>("RelativeMap", "Format"),
-    config_entry<char *>("PipePath", "Pipe"),
-    config_entry<char *>("ListenAddr", "Srver"),
-    config_entry<unsigned int>("ListenPort", "Srver"),
-    config_var_base()
 };
