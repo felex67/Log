@@ -73,7 +73,7 @@
         int (*const parse_d)(double *Val, const struct __config_parser *Inst, const char *VarName, const char *GrpName);
         /** В случае успеха возвращает указатель на строку значения переменной,
          * иначе - возвращается нулевой указатель ((char*)0)!!! */
-        const char *(*const parse_str)(const struct __config_parser *Inst, const char *VarName, const char *GrpName);
+        int (*const parse_str)(const char **Val, const struct __config_parser *Inst, const char *VarName, const char *GrpName);
 /** private: */
         /** Расчитывает количество групп и переменных:
          * Если не установлен пользовательсий метод,
@@ -234,7 +234,7 @@
      * в случае неудачи возвращает -1, а поле остаётся нетронутым */
     int config_parser_parse_d(double *Val, const ConfigParser *Inst, const char *VarName, const char *GrpName);
     // Возвращает указатель на первый символ после ковычки
-    const char *config_parser_parse_str(const ConfigParser *Inst, const char *VarName, const char *GrpName);
+    int config_parser_parse_str(const char **Var, const ConfigParser *Inst, const char *VarName, const char *GrpName);
 
 #endif // __config_parser_c__
 
