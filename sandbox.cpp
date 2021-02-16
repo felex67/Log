@@ -1,14 +1,13 @@
 #include <sys/types.h>
-#include <stdio.h>
+#include <stdlib.h>
+#include <cstdio>
+#include <iostream>
+#include <cstring>
+#include <time.h>
+#include <string>
 
-struct ConfigParser;
+#include "headers/exception.hpp"
 
-
-int main() {
-    size_t rounds = sizeof(__log_config) / sizeof(config_var_base);
-    config_var_base *v = (config_var_base*)&LogConfig;
-    for (size_t i = 0; i < rounds; i++) {
-        v[i].say();
-    }
+int main (const int argc, const char *argv[]) {
     return 0;
 }

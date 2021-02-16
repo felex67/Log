@@ -1,0 +1,2 @@
+[Exception]	2021-02-15 21:05:59.678125235 "exception module test..."	module:'exception' file:sandbox.cpp:10
+[Exception]	2021-02-16 01:25:34.959032288 "Тест локали..."	module:'exception' file:sandbox.cpp:11

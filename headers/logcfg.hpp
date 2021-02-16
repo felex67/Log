@@ -1,50 +1,58 @@
 #pragma once
 
-#include "headers/config.hpp"
+#include "headers/modules/Config.hpp"
 
 namespace log {
-    struct _Mode : config::group {
-        _Mode(const char *Name) : config::group(Name) {}
-        mutable cfstring RunAs = { "RunAs" };
-    };
-    struct _LifeTime : config::group {
-        _LifeTime(const char *Name) : config::group(Name) {}
-        mutable cflong DayTime = { "DayTime" };
-        mutable cflong FileTime = { "FileTime" };
-        mutable cfulong FileSize = { "FileSize" };
-        mutable cflong KickAfter = { "KickAfter" };
-    };
-    struct _BuffSz : config::group {
-        _BuffSz(const char *Name) : config::group(Name) {}
-        mutable cfint Date = {"Date" };
-        mutable cfint Time = { "Time" };
-        mutable cfint ActualName = { "ActualName" };
-    };
-    struct _Format : config::group {
-        _Format(const char *Name) : config::group(Name) {}
-        mutable cfstring PathDate = { "PathDate" };
-        mutable cfstring PathTime = { "PathTime" };
-        mutable cfstring MsgTime = { "MsgTime" };
-        mutable cfstring Message = { "Message" };
-        mutable cfstring RelPath = { "RelativePath" };
-        mutable cfstring RelName = { "RelativeName" };
-        mutable cfstring RelMap = { "RelativeMap" };
-    };
-    struct _Pipe : config::group {
-        _Pipe(const char *Name) : config::group(Name) {}
-        mutable cfstring Path = { "Path" };
-    };
-    struct _Server : config::group {
-        _Server(const char *Name) : config::group(Name) {}
-        mutable cfstring listAddr = { "ListenAddr" };
-        mutable cfuint listPort = { "ListenPort" };
-    };
-};
+    struct __config {
+        const cfg_instance_t header = { "log", "config", sizeof(__config) };
 
-struct __log_config : config::instance {
-    log::_Mode Mode = { "Mode" };
-    log::_BuffSz BuffSize = { "BufferSize" };
-    log::_Format Format = { "Format" };
-    log::_Pipe Pipe = { "Pipe" };
-    log::_Server Server = { "Server" };
-} LogCfg;
+        struct _Mode {
+            const cfg_group_t header = { "Mode", sizeof(Mode) };
+            mutable cfg_int32_t RunAs = { "RunAs", 0 };
+            
+        } Mode;
+        
+
+        struct _LifeTime {
+            const cfg_group_t header = { "LifeTime", sizeof(_LifeTime) };
+
+            mutable cfg_int64_t DayTime = { "DayTime", 6 };
+            mutable cfg_int64_t FileTime = { "FileTime", 10 };
+            mutable cfg_uint64_t FileSize = { "FileSize", 5 };
+            mutable cfg_int64_t KickAfter = { "KickAfter", 60 };
+        } LifeTime;
+
+        struct _BuffSz {
+            const cfg_group_t header = { "BufferSize", sizeof(_BuffSz) };
+
+            mutable cfg_int32_t Date = {"Date", 24 };
+            mutable cfg_int32_t Time = { "Time", 24 };
+            mutable cfg_int32_t ActualName = { "ActualName", 64 };
+        } BuffSize;
+
+        struct _Format {
+            const cfg_group_t header = { "Format", sizeof(_Format) };
+
+            mutable cfg_string_t PathDate = { "PathDate", "%Y-%m-%d" };
+            mutable cfg_string_t PathTime = { "PathTime", "%H-%M-%S" };
+            mutable cfg_string_t MsgTime = { "MsgTime", "%Y-%m-%d %X.%lu" };
+            mutable cfg_string_t Message = { "Message", "%s %s\n" };
+            mutable cfg_string_t RelPath = { "RelativePath", "%s/%s" };
+            mutable cfg_string_t RelName = { "RelativeName", "%s/%s.%s" };
+            mutable cfg_string_t RelMap = { "RelativeMap", "NDT" };
+        } Format;
+
+        struct _Pipe {
+            cfg_group_t header = { "Pipe", sizeof(_Pipe) };
+
+            mutable cfg_string_t Path = { "Path", ".temp/flxwd-logger-pipe123" };
+        } Pipe;
+
+        struct _Server {
+            cfg_group_t header = { "Server", sizeof(_Server) };
+
+            mutable cfg_string_t listAddr = { "ListenAddr", "localhost" };
+            mutable cfg_uint32_t listPort = { "ListenPort", 39990 };
+        } Server;
+    } Config;
+};
