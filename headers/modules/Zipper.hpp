@@ -32,8 +32,9 @@ namespace modules {
         typedef const ssize_t zv_type_t;
         typedef const char* zv_name_t;
 /** Базовый абстрактный класс переменной(в том числе и объектов-заголовков - 'instance' и 'group')
- * Во всех дочерних классах методы '__to_string()' и '__from_string()' в случае
- * ошибки генерируют исключения: 'class exception : public std::exception {};' */
+ * '__to_string()' и '__from_string()' в случае ошибки генерируют исключения:
+ * 'class exception : public std::exception {};'
+ * Следует заметить что прямой вызов из этого класса также сгенерирует исключение */
         struct entry_base {
         protected:
             // Конструктор: тип имя и данные(беззнаковое целое 64 бита)
@@ -41,10 +42,10 @@ namespace modules {
         public:
             // Деструктор
             ~entry_base();
-            // Абстрактный метод сканирующий значение из строкового представления
-            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr) = 0;
+            /** Абстрактный метод сканирующий значение из строкового представления */
+            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
             // Абстрактный метод приводящий переменную в строковое представление
-            virtual ssize_t __to_string(void handle_result(const char *Name, const char *Val), const char *mask = nullptr) = 0;
+            virtual ssize_t __to_string(void handle_result(const char *Name, const char *Val), const char *mask = nullptr) const;
             // Логическое представление переменной ('true' если 'data != 0')
             operator bool ();
         public:
@@ -78,7 +79,7 @@ namespace modules {
                     throw exception(__FILE__, __LINE__, "__base<T>::__from_string(Src) Src == nullptr", "Zipper");
                 }
             }
-            virtual ssize_t __to_string(void nandle_result(const char *Name,const char *Val)) {
+            virtual ssize_t __to_string(void nandle_result(const char *Name,const char *Val)) const {
                 char *buff = nullptr;
                 if ((INVALID < type) && (CSTRING > type)) {
                     buff = new char[256];
@@ -121,10 +122,32 @@ namespace modules {
             void setval(const char *ndata) { data = reinterpret_cast<const zv_data_t&>(ndata); }
         private:
             virtual ssize_t __from_string(const char* src, const char *mask = nullptr) {
-                const char *msk = nullptr;
+                char *temp;
+                char *&cd = reinterpret_cast<char*&>(data);
+                ssize_t len = 0;
+                char Q = 0;
                 if ((nullptr != src) && (CSTRING == type)) {
-                    msk = (nullptr != mask ? mask : print_scan_mask[type]);
-                    return sscanf(src, msk, reinterpret_cast<T&>(data));
+                    switch (*src) {
+                        case '`':
+                        case '\'':
+                        case '"':
+                            Q = *src;
+                            ++src;
+                            while ((0 != src[len]) && ((Q != src[len]) || (src[len - 1] == '\\'))) ++len;
+                            break;
+                        default:
+                            len = 0;
+                            while ((0 != src[len]) && (' ' < src[len])) ++len;
+                    }
+                    temp = new char[len + 1];
+                    if (nullptr != temp);
+                    else { throw exception(__FILE__, __LINE__, "Недостаточно памяти...", "Zipper"); }
+                    delete[] cd;
+                    cd = temp;
+                    strncpy(cd, src, len);
+                    cd[len] = 0;
+
+                    return len;
                 }
                 else if (nullptr != src) {
                     throw exception(__FILE__, __LINE__, "__base<char*>::__from_string() Неизвестный тип", "Zipper");
@@ -133,20 +156,25 @@ namespace modules {
                     throw exception(__FILE__, __LINE__, "__base<char*>::__from_string(Src) Src == nullptr", "Zipper");
                 }
             }
-            virtual ssize_t __to_string(void nandle_result(const char *,const char *)) {
+            virtual ssize_t __to_string(void callback(const char *a,const char *b)) const {
                 if (CSTRING > type) {
-                    handle_result(name, const_cast<const char*&>(reinterpret_cast<char*&>(data)));
+                    callback(name, reinterpret_cast<const char*>(data));
                 }
                 else { throw exception(__FILE__, __LINE__, "__base<char*>::__to_string() Неизвестный тип", "Zipper"); }
                 return 0;
             }
         };
 
-/** Абстрактный класс объекта-заголовка: файл */
+/** Абстрактный класс объекта-заголовка: файл
+ * Наследники должны реализовать методы (__from/__to)_string(),
+ * в противном случае будет сгенерировано исключение!!! */
         struct instance : public __base<u_int64_t> {
             instance(const char *Name, const char *Path, const size_t ByteCnt);
             ~instance();
-            
+            /** Абстрактный метод сканирующий значение из строкового представления */
+            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
+            // Абстрактный метод приводящий переменную в строковое представление
+            virtual ssize_t __to_string(void handle_result(const char *Name, const char *Val), const char *mask = nullptr) const;
             zv_name_t path;
         };
 /** Гибкий массив для работы
@@ -161,10 +189,17 @@ namespace modules {
             instance inst;
             entry_base v[];
         };
-/** Абстрактный класс объекта-заголовка: группа */
+
+/** Абстрактный класс объекта-заголовка: группа
+ * Наследники должны реализовать методы (__from/__to)_string(),
+ * в противном случае будет сгенерировано исключение!!! */
         struct group : __base<u_int64_t>{
             group(const char *Name, const size_t ByteCnt);
             ~group();
+            /** Абстрактный метод сканирующий значение из строкового представления */
+            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
+            // Абстрактный метод приводящий переменную в строковое представление
+            virtual ssize_t __to_string(void handle_result(const char *Name, const char *Val), const char *mask = nullptr) const;
         };
 
     };
