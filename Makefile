@@ -31,6 +31,14 @@ shared/libConfig.so: bin/Config-fpic.o
 bin/Config-fpic.o: source/Config.cpp
 	g++ -c -fPIC -g source/Config.cpp -o Config-fpic.o -I.
 	mv Config-fpic.o bin/
+#### parser.c
+shared/libparser.so: bin/parser-fpic.o
+	g++ -g -shared  bin/parser-fpic.o -o libparser.so -Lshared/ -lZipper -lexcept -lCleaner -Wl,-rpath,shared/ -I.
+	mv libparser.so shared/
+#
+bin/parser-fpic.o: source/parser.cpp
+	g++ -c -fPIC -g source/parser.cpp -o parser-fpic.o -I.
+	mv parser-fpic.o bin/
 ##################################
 clean: clean-so clean-o clean-a
 clean-so:

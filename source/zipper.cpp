@@ -1,4 +1,4 @@
-#include "headers/modules/Zipper.hpp"
+#include "headers/modules/zipper.hpp"
 
 #include <cstdio>
 #include <errno.h>
@@ -11,31 +11,6 @@ namespace modules {
         const char *const __print_mask[] = {
             "", "%s=%i", "%s=%u", "%s=%li", "%s=%lu", "%s=%f", "%s=%lf", "%s=%s", "%s", "%s/%s", 0
         };
-
-/** __zipper::entry_base */
-        entry_base::entry_base(zv_type_t type, const char* name, const zv_data_t data)
-            : type(type), name(nullptr), data(data)
-        {
-            if (name != nullptr) {
-                const_cast<char*&>(this->name) = new char[strlen(name) + 1];
-                if (this->name != nullptr) {
-                    strcpy(const_cast<char*&>(this->name), name);
-                }
-            }
-        }
-        entry_base::~entry_base() {
-            if (name) {
-                delete[] name;
-                const_cast<char*&>(this->name) = nullptr;
-            }
-        }
-        ssize_t entry_base::__from_string(const char* Source, const char *mask) {
-            throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __from_string()", "Zipper");
-        };
-        ssize_t entry_base::__to_string(std::string &Dest, const char *mask) const {
-            throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __to_string()", "Zipper");
-        };
-        entry_base::operator bool () { return data != 0; }
 
 /** __zipper::instance */
         instance::instance(const char *Name, const char *Path, const size_t ByteCnt)

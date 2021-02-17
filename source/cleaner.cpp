@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <fstream>
 
-#include "headers/modules/Cleaner.hpp"
+#include "headers/modules/cleaner.hpp"
 
 namespace modules {
     const u_int8_t *Cleaner::DfltLComm = reinterpret_cast<const u_int8_t*>(";#");

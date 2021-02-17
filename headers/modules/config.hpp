@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdio>
-#include "headers/modules/Zipper.hpp"
+#include "headers/modules/zipper.hpp"
 
 namespace modules {
     namespace __config {

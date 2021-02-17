@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string>
-#include "headers/modules/Config.hpp"
+#include "headers/modules/config.hpp"
 
 namespace modules {
     namespace __config {

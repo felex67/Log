@@ -4,11 +4,10 @@
 #include <cstring>
 #include <string>
 
-#include "headers/modules/Cleaner.hpp"
+#include "headers/modules/cleaner.hpp"
 #include "headers/exception.hpp"
 
 namespace modules {
-    struct Zipper;
     namespace __zipper {
 /** Типы переиенных */
         enum _e_vartype {
@@ -39,16 +38,33 @@ namespace modules {
         struct entry_base {
         protected:
             // Конструктор: тип имя и данные(беззнаковое целое 64 бита)
-            entry_base(zv_type_t type, const char* name, const zv_data_t data);
-        public:
+            inline entry_base(zv_type_t type, const char* name, const zv_data_t data)
+                : type(type)
+                , name(nullptr)
+                , data(data)
+            {
+                size_t len;
+                if (nullptr != name) {
+                    len = strlen(name);
+                    this->name = new char[len + 1];
+                    if (nullptr != this->name) {
+                        strcpy(const_cast<char*&>(this->name), name);
+                    }
+                }
+            }
+
             // Деструктор
-            ~entry_base();
+            inline ~entry_base() { if (nullptr != name) { delete[] name; name = nullptr; } }
             /** Абстрактный метод сканирующий значение из строкового представления */
-            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
+            inline virtual ssize_t __from_string(const char* Source, const char *mask = nullptr) {
+                throw exception(__FILE__, __LINE__, "Обращение к чисто-виртуальному методу", "zipper");
+            }
             // Абстрактный метод приводящий переменную в строковое представление
-            virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const;
+            inline virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const {
+                throw exception(__FILE__, __LINE__, "Обращение к чисто-виртуальному методу", "zipper");
+            }
             // Логическое представление переменной ('true' если 'data != 0')
-            operator bool ();
+            inline operator bool () { return (0 != data); }
         public:
             //
             zv_type_t type;
@@ -56,6 +72,35 @@ namespace modules {
             zv_data_t data;
         };
 
+/** Абстрактный класс объекта-заголовка: файл
+ * Наследники должны реализовать методы (__from/__to)_string(),
+ * в противном случае будет сгенерировано исключение!!! */
+        struct instance : public entry_base {
+            inline instance(const char *Name, const char *Path, const size_t ByteCnt)
+                : entry_base(INSTANCE, Name, (ByteCnt - sizeof(*this)) / sizeof(__zipper::entry_base))
+                , path(nullptr)
+            {
+                const_cast<char*&>(path) = new char[strlen(Path) + 1];
+                if (nullptr != path) {
+                    strcpy(const_cast<char*&>(path), Path);
+                }
+            }
+            inline ~instance() {
+                if (nullptr != path) {
+                    delete[] path;
+                    const_cast<char*&>(path) = 0;
+                }
+            }
+            /** Абстрактный метод сканирующий значение из строкового представления */
+            inline virtual ssize_t __from_string(const char* Source, const char *mask = nullptr) {
+                throw exception(__FILE__, __LINE__, "Обращение к чисто-виртуальному методу", "zipper");
+            }
+            // Абстрактный метод приводящий переменную в строковое представление
+            inline virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const {
+                throw exception(__FILE__, __LINE__, "Обращение к чисто-виртуальному методу", "zipper");
+            }
+            zv_name_t path;
+        };
 /** Шаблонный класс переменной(в том числе и Объектов-заголовков: instance, group) */
         template <typename T>
         class __base : private entry_base {
@@ -179,18 +224,6 @@ namespace modules {
             }
         };
 
-/** Абстрактный класс объекта-заголовка: файл
- * Наследники должны реализовать методы (__from/__to)_string(),
- * в противном случае будет сгенерировано исключение!!! */
-        struct instance : public entry_base {
-            instance(const char *Name, const char *Path, const size_t ByteCnt);
-            ~instance();
-            /** Абстрактный метод сканирующий значение из строкового представления */
-            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
-            // Абстрактный метод приводящий переменную в строковое представление
-            virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const;
-            zv_name_t path;
-        };
 /** Гибкий массив для работы
  * Использование:
  * в методах упаковки/распаковки делаем каст на эту структуру и работаем как с
@@ -211,7 +244,7 @@ namespace modules {
             group(const char *Name, const size_t ByteCnt);
             ~group();
             /** Абстрактный метод сканирующий значение из строкового представления */
-            virtual ssize_t __from_string(const char* Source, const char *mask = nullptr);
+            virtual ssize_t __from_string(const char *&Source, const char *mask = nullptr);
             // Абстрактный метод приводящий переменную в строковое представление
             virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const;
         };
@@ -222,6 +255,7 @@ namespace modules {
     protected:
         Cleaner cleaner;
         int error;
+
     public:
 /** Обёртки */
         // Заголовок-файл
