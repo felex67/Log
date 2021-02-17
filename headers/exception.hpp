@@ -28,4 +28,3 @@ public:
     virtual void perror() const noexcept;
     static bool logerrors;
 };
-

@@ -5,8 +5,11 @@
 
 namespace modules {
     namespace __zipper {
-        const char *const print_scan_mask[] = {
-            "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%s", "%s/%s", 0
+        const char *const __scan_mask[] = {
+            "", "=%i", "=%u", "=%li", "=%lu", "=%f", "=%lf", "=%s", "%s", "%s/%s", 0
+        };
+        const char *const __print_mask[] = {
+            "", "%s=%i", "%s=%u", "%s=%li", "%s=%lu", "%s=%f", "%s=%lf", "%s=%s", "%s", "%s/%s", 0
         };
 
 /** __zipper::entry_base */
@@ -26,17 +29,17 @@ namespace modules {
                 const_cast<char*&>(this->name) = nullptr;
             }
         }
-        ssize_t entry_base::__from_string(const char* Source, const char *mask = nullptr) {
+        ssize_t entry_base::__from_string(const char* Source, const char *mask) {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __from_string()", "Zipper");
         };
-        ssize_t entry_base::__to_string(void(const char*,const char*), const char *mask = nullptr) const {
+        ssize_t entry_base::__to_string(std::string &Dest, const char *mask) const {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __to_string()", "Zipper");
         };
         entry_base::operator bool () { return data != 0; }
 
 /** __zipper::instance */
         instance::instance(const char *Name, const char *Path, const size_t ByteCnt)
-            : __base(INSTANCE, Name, (ByteCnt - sizeof(*this)) / sizeof(__zipper::entry_base))
+            : entry_base(INSTANCE, Name, (ByteCnt - sizeof(*this)) / sizeof(__zipper::entry_base))
             , path(nullptr)
         {
             const_cast<char*&>(path) = new char[strlen(Path) + 1];
@@ -50,23 +53,24 @@ namespace modules {
                 const_cast<char*&>(path) = 0;
             }
         }
-        ssize_t instance::__from_string(const char* Source, const char *mask = nullptr) {
+
+        ssize_t instance::__from_string(const char* Source, const char *mask) {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __from_string()", "Zipper");
         };
-        ssize_t instance::__to_string(void(const char*,const char*), const char *mask = nullptr) const {
+        ssize_t instance::__to_string(std::string &Dest, const char *mask) const {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __to_string()", "Zipper");
         };
 
 
 /** __zipper::group */
         group::group(const char *Name, const size_t ByteCnt)
-            : __base(GROUP, Name, (ByteCnt / sizeof(*this)))
+            : entry_base(GROUP, Name, (ByteCnt / sizeof(*this)))
         {}
         group::~group() {}
-        ssize_t group::__from_string(const char* Source, const char *mask = nullptr) {
+        ssize_t group::__from_string(const char* Source, const char *mask) {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __from_string()", "Zipper");
         };
-        ssize_t group::__to_string(void(const char*,const char*), const char *mask = nullptr) const {
+        ssize_t group::__to_string(std::string &Dest, const char *mask) const {
             throw exception(__FILE__, __LINE__, "Попытка вызова чисто виртуального метода: __to_string()", "Zipper");
         };
     };
@@ -79,6 +83,9 @@ namespace modules {
     Zipper::group::group(const char *GroupName, const size_t __SizeofGroup)
         : __zipper::group(GroupName, __SizeofGroup)
     {}
+    Zipper::instance::operator modules::__zipper::entries &() {
+        return reinterpret_cast<modules::__zipper::entries&>(*this);
+    }
 
     Zipper::Zipper() {}
     Zipper::~Zipper() {}
@@ -102,6 +109,6 @@ namespace modules {
         : __zipper::__base<double>(__zipper::DOUBLE, VarName, Dflt)
     {}
     Zipper::zipp_cstring::zipp_cstring(const char *VarName, const char *Dflt)
-        : __zipper::__base<const char*>(__zipper::CSTRING, VarName, Dflt)
+        : __zipper::__base<char*>(__zipper::CSTRING, VarName, Dflt)
     {}
 };

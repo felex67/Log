@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <fstream>
 
-#include "headers/modules/cleaner.hpp"
+#include "headers/modules/Cleaner.hpp"
 
 namespace modules {
     const u_int8_t *Cleaner::DfltLComm = reinterpret_cast<const u_int8_t*>(";#");
@@ -203,10 +203,10 @@ namespace modules {
     int Cleaner::sort(u_int8_t* bytes) {
         int i = 0, fwd = 1, swapped = 0;
         u_int8_t t;
-        if (0 != a) {
+        if (0 != bytes) {
             for ( i = 0, fwd = 1; (0 != bytes[i]); ) {
                 if ((0 != bytes[i + 1]) && swapped) { fwd = 0; }
-                if (a[i] < bytes[i + 1]) {
+                if (bytes[i] < bytes[i + 1]) {
                     t = bytes[i];
                     bytes[i] = bytes[i + 1];
                     bytes[i + 1] = t;
@@ -219,5 +219,8 @@ namespace modules {
             return 0;
         }
         return -1;
+    }
+    const char* Cleaner::c_str() const {
+        return const_cast<const char*>(reinterpret_cast<char*>(In));
     }
 };

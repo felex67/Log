@@ -5,7 +5,8 @@
 
 namespace __errorlog {
     const char __format_exception[] = "[%s]\t%s.%lu \"%s\"\tmodule:'%s' file:%s:%i\n";
-    FILE *__handle::errorlog = fopen("log/error.log", "ab");
+    const char __format_error[] = "[%s]\t%s.%lu %s(): \"%s\"\tmodule:'%s'\n";
+    FILE *__handle::errorlog = fopen("error.log", "ab");
     __handle* __handle::main_inst = nullptr;
     __handle::__handle() {
         if (main_inst == nullptr) main_inst = this;

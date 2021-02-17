@@ -1,13 +1,19 @@
 #pragma once
 
+#include <cstdio>
 #include "headers/modules/Zipper.hpp"
 
 namespace modules {
+    namespace __config {
+        extern const char *print_scan_masks[];
+    };
     class Config : private Zipper {
     public:
         struct group : Zipper::group {
             group(const char *CfgGroupName, const size_t __SizeofConfigGroup);
             ~group();
+            virtual ssize_t __from_string(const char *Source, const char *Mask);
+            virtual ssize_t __to_string(std::string &Dest, const char *Mask);
         };
         struct instance : public Zipper::instance {
             instance(const char *ConfigName, const char *ConfigPath, const size_t SizeofConfig);
@@ -15,8 +21,8 @@ namespace modules {
         };
         Config();
         ~Config();
-        virtual const u_int8_t* pack(Zipper::instance *Inst);
-        virtual int unpack(Zipper::instance *Inst);
+        virtual int save(__zipper::entries &Inst);
+        virtual int load(__zipper::entries &Inst);
     };
 };
 

@@ -30,6 +30,7 @@ namespace modules {
         int set_nonspace(const char *NonSpaceChars);
         int set_quotes(const char *QuotesChars);
         char* release();
+        const char* c_str() const;
         void reset();
     private:
         int process();
