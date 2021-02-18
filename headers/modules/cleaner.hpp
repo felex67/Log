@@ -29,7 +29,7 @@ namespace modules {
         int set_lcomm(const char *LineCommChars);
         int set_nonspace(const char *NonSpaceChars);
         int set_quotes(const char *QuotesChars);
-        char* release();
+        void release(u_int8_t *&Src, size_t &SrcSize);
         const char* c_str() const;
         void reset();
     private:

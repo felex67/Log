@@ -34,11 +34,11 @@ namespace modules {
         const_cast<const u_int8_t*&>(NonSpc) = DfltNS;
         SzI = SzW = 0;
     }
-    char* Cleaner::release() {
-        char *t = (reinterpret_cast<char*const>(In));
+    void Cleaner::release(u_int8_t *&D, size_t &DSz) {
+        D = In;
+        DSz = SzI;
         const_cast<u_int8_t*&>(In) = nullptr;
         SzI = 0;
-        return t;
     }
     int Cleaner::init(const char *FileName) {
         u_int8_t *tbytes;

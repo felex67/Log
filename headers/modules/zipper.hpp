@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "headers/modules/cleaner.hpp"
 #include "headers/exception.hpp"
@@ -11,11 +12,11 @@ namespace modules {
     namespace __zipper {
 /** Типы переиенных */
         enum _e_vartype {
-            INVALID = -1,
-            INT = 1,
-            UINT,
-            LONG,
-            ULONG,
+            INVALID,
+            INT32,
+            UINT32,
+            INT64,
+            UINT64,
             FLOAT,
             DOUBLE,
             CSTRING,
@@ -23,8 +24,12 @@ namespace modules {
             INSTANCE
         };
 /** Маски для функций ряда 'printf' и 'scanf' */
-        extern const char *const __scan_mask[];
-        extern const char *const __print_mask[];
+        static const char *const __scan_mask[] = {
+            "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%[0-9_A-Za-z]s", "%[./0-9_A-Za-z-]s"
+        };
+        static const char *const __print_mask[] = {
+            "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%s", "%s%s"
+        };
         /** после инициализации изменить будет невозможно()
          * Хотя, изменить то можно, но - не стоит, приведёт к ошибкам */
         typedef const ssize_t zv_type_t;
@@ -65,6 +70,12 @@ namespace modules {
             }
             // Логическое представление переменной ('true' если 'data != 0')
             inline operator bool () { return (0 != data); }
+            inline bool operator == (const char *Src) const {
+                if ((nullptr != name) && (nullptr != Src)) {
+                    return (0 == strncmp(name, Src, strlen(name)));
+                }
+                return false;
+            }
         public:
             //
             zv_type_t type;
@@ -115,7 +126,7 @@ namespace modules {
                 const char *msk = nullptr;
                 if ((nullptr != src) && (INVALID < type) && (CSTRING > type)) {
                     msk = (nullptr != mask ? mask : __scan_mask[type]);
-                    return sscanf(src, msk, reinterpret_cast<T&>(data));
+                    return sscanf(src, msk, reinterpret_cast<T*>(&data));
                 }
                 else if (nullptr != src) {
                     throw exception(__FILE__, __LINE__, "__base<T>::__from_string() Неизвестный тип", "Zipper");
@@ -127,7 +138,7 @@ namespace modules {
             virtual ssize_t __to_string(std::string &Dest, const char* mask = nullptr) const {
                 char *buff = nullptr;
                 if ((INVALID < type) && (CSTRING > type)) {
-                    buff = new char[256];
+                    buff = new char[1024];
                     if (buff != nullptr) {
                         sprintf(buff, ((nullptr == mask) ? __print_mask[type] : mask), reinterpret_cast<const T&>(data));
                         Dest += buff;
@@ -253,55 +264,125 @@ namespace modules {
 /** Абстрактный класс сериализатора */
     class Zipper {
     protected:
-        Cleaner cleaner;
+        u_int8_t *__src;
+        size_t __srcsz;
+        std::vector<u_int8_t*> vLines;
         int error;
-
+        inline Zipper()
+            : __src(nullptr)
+            , __srcsz(0)
+            , vLines()
+            , error(0)
+        {}
     public:
-/** Обёртки */
-        // Заголовок-файл
-        struct instance : __zipper::instance {
-            instance(const char *FileName, const char *FilePath, const size_t __SizeofInst);
-            ~instance();
-            operator modules::__zipper::entries & ();
-        };
-        // Заголовок-группа
-        struct group : __zipper::group {
-            group(const char *GroupName, const size_t __SizeofGroup);
-        };
-        // целочисленная со знаком, 32 бита
-        struct zipp_int32 : public __zipper::__base<int32_t> {
-            zipp_int32(const char *VarName, const int32_t Dflt);
-        };
-        // целочисленная без знака, 32 бита
-        struct zipp_uint32 : public __zipper::__base<u_int32_t> {
-            zipp_uint32(const char *VarName, const u_int32_t Dflt);
-        };
-        // целочисленная со знаком, 64 бита
-        struct zipp_int64 : public __zipper::__base<int64_t> {
-            zipp_int64(const char *VarName, const int64_t Dflt);
-        };
-        // целочисленная без знака, 64 бита
-        struct zipp_uint64 : public __zipper::__base<u_int64_t> {
-            zipp_uint64(const char *VarName, const u_int64_t Dflt);
-        };
-        // вещественное 32 битв
-        struct zipp_float : public __zipper::__base<float> {
-            zipp_float(const char *VarName, const float Dflt);
-        };
-        // вещественное 64 битв
-        struct zipp_double : public __zipper::__base<double> {
-            zipp_double(const char *VarName, const double Dflt);
-        };
-        // "Си"-строка
-        struct zipp_cstring : public __zipper::__base<char*> {
-            zipp_cstring(const char *VarName, const char *Dflt);
-        };
+        inline virtual ~Zipper() {
+            if (nullptr != __src) {
+                delete[] __src;
+                __src = nullptr;
+            }
+        }
+        // Загрузить
+        inline virtual int load(__zipper::entries &Inst) final {
+            std::string file = Inst.inst.path;
+            u_int8_t *LineStart = nullptr;
+            u_int8_t *end = nullptr;
+            u_int8_t *i = nullptr;
+            {
+                Cleaner cleaner;
+                file += Inst.inst.name;
+                if (-1 != cleaner.init(file.c_str()));
+                else {
+                    /* handle error */
+                    return -1;
+                }
+                cleaner.release(__src, __srcsz);
+            }
+            LineStart = __src;
+            end = __src + __srcsz;
+            i = LineStart;
 
-        Zipper();
-        virtual ~Zipper();
-        // Упаковать
-        virtual int save(__zipper::entries &Inst) = 0;
-        // Распаковать
-        virtual int load(__zipper::entries &Inst) = 0;
+            for ( ; (0 != *i) && (i < end); i++) {
+                if ('\n' == *i) {
+                    vLines.push_back(LineStart);
+                    *i = 0;
+                    LineStart = i + 1;
+                }
+            }
+            if (LineStart < i) vLines.push_back(LineStart);
+            return unpack(Inst);
+        }
+        // Сохранить
+        inline virtual int save(__zipper::entries &Inst) final {
+            return pack(Inst);
+        }
+    private:
+        // Должны быть реализованы
+        virtual ssize_t pack(__zipper::entries &Inst) = 0;
+        virtual ssize_t unpack(__zipper::entries &Inst) = 0;
+    };
+/** Обёртки */
+    // Заголовок-файл
+    struct instance : __zipper::instance {
+        inline instance(const char *FileName, const char *FilePath, const size_t __SizeofInst)
+            : __zipper::instance(FileName, FilePath, __SizeofInst)
+        {}
+        inline ~instance() {}
+        inline operator modules::__zipper::entries & () { return *this; }
+    };
+    // Заголовок-группа
+    struct group : __zipper::group {
+        inline group(const char *GroupName, const size_t __SizeofGroup)
+            : __zipper::group(GroupName, __SizeofGroup)
+        {}
+        inline ~group() {}
+    };
+    // целочисленная со знаком, 32 бита
+    struct zipp_int32 : public __zipper::__base<int32_t> {
+        inline zipp_int32(const char *VarName, const int32_t Dflt)
+            : __zipper::__base<int32_t>(__zipper::INT32, VarName, Dflt)
+        {}
+        inline ~zipp_int32() {}
+    };
+    // целочисленная без знака, 32 бита
+    struct zipp_uint32 : public __zipper::__base<u_int32_t> {
+        inline zipp_uint32(const char *VarName, const u_int32_t Dflt)
+            : __zipper::__base<u_int32_t>(__zipper::UINT32, VarName, Dflt)
+        {}
+        inline ~zipp_uint32() {}
+    };
+    // целочисленная со знаком, 64 бита
+    struct zipp_int64 : public __zipper::__base<int64_t> {
+        inline zipp_int64(const char *VarName, const int64_t Dflt)
+            : __zipper::__base<int64_t>(__zipper::INT64, VarName, Dflt)
+        {}
+        inline ~zipp_int64() {}
+    };
+    // целочисленная без знака, 64 бита
+    struct zipp_uint64 : public __zipper::__base<u_int64_t> {
+        inline zipp_uint64(const char *VarName, const u_int64_t Dflt)
+            : __zipper::__base<u_int64_t>(__zipper::UINT64, VarName, Dflt)
+        {}
+        inline ~zipp_uint64() {}
+    };
+    // вещественное 32 битв
+    struct zipp_float : public __zipper::__base<float> {
+        inline zipp_float(const char *VarName, const float Dflt)
+            : __zipper::__base<float>(__zipper::FLOAT, VarName, Dflt)
+        {}
+        inline ~zipp_float() {}
+    };
+    // вещественное 64 битв
+    struct zipp_double : public __zipper::__base<double> {
+        inline zipp_double(const char *VarName, const double Dflt)
+            : __zipper::__base<double>(__zipper::DOUBLE, VarName, Dflt)
+        {}
+        inline ~zipp_double() {}
+    };
+    // "Си"-строка
+    struct zipp_cstring : public __zipper::__base<char*> {
+        inline zipp_cstring(const char *VarName, const char *Dflt)
+            : __zipper::__base<char*>(__zipper::CSTRING, VarName, Dflt)
+        {}
+        inline ~zipp_cstring() {}
     };
 };
