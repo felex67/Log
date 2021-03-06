@@ -10,6 +10,16 @@
 
 namespace modules {
     namespace __zipper {
+        struct iVar {
+        /** Абстрактный метод сканирующий значение из строкового представления */
+            inline virtual ssize_t scan(const char* Source, const char *mask = nullptr) = 0;
+            // Абстрактный метод приводящий переменную в строковое представление
+            inline virtual ssize_t puts(std::string &Dest, const char *mask = nullptr) const = 0;
+        };
+        struct iInstance {
+            inline virtual ssize_t load(const char *FileName) = 0;
+            inline virtual ssize_t save(const char *FileName) = 0;
+        };
 /** Типы переиенных */
         enum _e_vartype {
             INVALID,
@@ -255,7 +265,7 @@ namespace modules {
             group(const char *Name, const size_t ByteCnt);
             ~group();
             /** Абстрактный метод сканирующий значение из строкового представления */
-            virtual ssize_t __from_string(const char *&Source, const char *mask = nullptr);
+            inline virtual ssize_t __from_string(const char *&Source, const char *mask = nullptr);
             // Абстрактный метод приводящий переменную в строковое представление
             virtual ssize_t __to_string(std::string &Dest, const char *mask = nullptr) const;
         };
@@ -322,19 +332,19 @@ namespace modules {
     };
 /** Обёртки */
     // Заголовок-файл
-    struct instance : __zipper::instance {
-        inline instance(const char *FileName, const char *FilePath, const size_t __SizeofInst)
+    struct zipp_inst : __zipper::instance {
+        inline zipp_inst(const char *FileName, const char *FilePath, const size_t __SizeofInst)
             : __zipper::instance(FileName, FilePath, __SizeofInst)
         {}
-        inline ~instance() {}
+        inline ~zipp_inst() {}
         inline operator modules::__zipper::entries & () { return *this; }
     };
     // Заголовок-группа
-    struct group : __zipper::group {
-        inline group(const char *GroupName, const size_t __SizeofGroup)
+    struct zipp_grp : __zipper::group {
+        inline zipp_grp(const char *GroupName, const size_t __SizeofGroup)
             : __zipper::group(GroupName, __SizeofGroup)
         {}
-        inline ~group() {}
+        inline ~zipp_grp() {}
     };
     // целочисленная со знаком, 32 бита
     struct zipp_int32 : public __zipper::__base<int32_t> {
