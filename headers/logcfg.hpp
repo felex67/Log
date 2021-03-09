@@ -1,6 +1,6 @@
 #pragma once
 
-#include "headers/modules/Config.hpp"
+#include "headers/modules/config.hpp"
 
 namespace log {
     struct __config {

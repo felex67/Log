@@ -10,16 +10,6 @@
 
 namespace modules {
     namespace __zipper {
-        struct iVar {
-        /** Абстрактный метод сканирующий значение из строкового представления */
-            inline virtual ssize_t scan(const char* Source, const char *mask = nullptr) = 0;
-            // Абстрактный метод приводящий переменную в строковое представление
-            inline virtual ssize_t puts(std::string &Dest, const char *mask = nullptr) const = 0;
-        };
-        struct iInstance {
-            inline virtual ssize_t load(const char *FileName) = 0;
-            inline virtual ssize_t save(const char *FileName) = 0;
-        };
 /** Типы переиенных */
         enum _e_vartype {
             INVALID,
@@ -35,7 +25,7 @@ namespace modules {
         };
 /** Маски для функций ряда 'printf' и 'scanf' */
         static const char *const __scan_mask[] = {
-            "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%[0-9_A-Za-z]s", "%[./0-9_A-Za-z-]s"
+            "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%[0-9_A-Za-z]s", "%[0-9A-Za-z./_-]s"
         };
         static const char *const __print_mask[] = {
             "", "%i", "%u", "%li", "%lu", "%f", "%lf", "%s", "%s", "%s%s"
@@ -53,7 +43,7 @@ namespace modules {
         struct entry_base {
         protected:
             // Конструктор: тип имя и данные(беззнаковое целое 64 бита)
-            inline entry_base(zv_type_t type, const char* name, const zv_data_t data)
+            inline entry_base(const zv_type_t type, const char* name, const zv_data_t data)
                 : type(type)
                 , name(nullptr)
                 , data(data)
@@ -262,8 +252,8 @@ namespace modules {
  * Наследники должны реализовать методы (__from/__to)_string(),
  * в противном случае будет сгенерировано исключение!!! */
         struct group : public entry_base {
-            group(const char *Name, const size_t ByteCnt);
-            ~group();
+            group(const char *Name, const size_t ByteCnt) : entry_base(GROUP, Name, ByteCnt) {}
+            ~group() {}
             /** Абстрактный метод сканирующий значение из строкового представления */
             inline virtual ssize_t __from_string(const char *&Source, const char *mask = nullptr);
             // Абстрактный метод приводящий переменную в строковое представление
